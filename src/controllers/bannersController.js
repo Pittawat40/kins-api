@@ -47,11 +47,12 @@ function uploadBanner(req, res) {
       .get(section).c === 0;
   const id = uuidv4();
   const now = new Date().toISOString();
+  const isVideo = req.file.mimetype.startsWith("video");
 
   db.prepare(
     `
-    INSERT INTO banners (id, section, filename, originalName, url, size, active, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO banners (id, section, filename, originalName, url, type, size, active, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     id,
@@ -59,6 +60,7 @@ function uploadBanner(req, res) {
     req.file.filename,
     req.file.originalname,
     `/uploads/banners/${req.file.filename}`,
+    isVideo ? "video" : "image",
     req.file.size,
     isFirst ? 1 : 0,
     now,

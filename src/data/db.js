@@ -50,6 +50,7 @@ db.exec(`
     filename     TEXT NOT NULL,
     originalName TEXT NOT NULL,
     url          TEXT NOT NULL,
+    type         TEXT DEFAULT 'image',
     size         INTEGER DEFAULT 0,
     active       INTEGER DEFAULT 0,
     sortOrder    INTEGER DEFAULT 0,
@@ -58,6 +59,11 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_banners_section ON banners(section);
 `);
+
+// ── Migration: add type if not exists ──────────
+try {
+  db.exec("ALTER TABLE banners ADD COLUMN type TEXT DEFAULT 'image'");
+} catch (e) {}
 
 // ── Migration: add description column if not exists ──────────
 try {
