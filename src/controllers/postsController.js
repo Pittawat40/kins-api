@@ -43,12 +43,10 @@ function deleteLocalImg(imgUrl) {
 // Standalone upload — returns { url } only, does NOT create a post
 function uploadImage(req, res) {
   if (!req.file) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: 'No file uploaded. Field name must be "img"',
-      });
+    return res.status(400).json({
+      success: false,
+      message: 'No file uploaded. Field name must be "img"',
+    });
   }
   const url = `/uploads/posts/${req.file.filename}`;
   return res.status(201).json({ success: true, url });
@@ -72,32 +70,56 @@ function searchOnePost(req, res) {
 // GET /api/:section/posts
 function listPosts(req, res) {
   const { section } = req.params;
-  const { status, search, sort = "newest", page = 1, limit = 10 } = req.query;
+  const {
+    status,
+    search,
+    sort = "newest",
+    page = "1",
+    limit = "10",
+  } = req.query;
+
+  const pageNum = Math.max(parseInt(page) || 1, 1);
+  const limitNum = Math.max(parseInt(limit) || 10, 1);
+  const offset = (pageNum - 1) * limitNum;
 
   const conds = ["section = ?"];
   const params = [section];
+
   if (status) {
     conds.push("status = ?");
     params.push(status);
   }
+
   if (search) {
     conds.push("title LIKE ?");
     params.push(`%${search}%`);
   }
 
   const where = conds.join(" AND ");
-  const order =
-    { oldest: "createdAt ASC", title: "title ASC" }[sort] ?? "createdAt DESC";
+
+  // ✅ whitelist sort กัน injection + error
+  const sortMap = {
+    newest: "createdAt DESC",
+    oldest: "createdAt ASC",
+    title: "title ASC",
+  };
+
+  const order = sortMap[sort] || sortMap.newest;
+
+  // total
   const total = db
     .prepare(`SELECT COUNT(*) as c FROM posts WHERE ${where}`)
     .get(...params).c;
-  const pageNum = parseInt(page),
-    limitNum = parseInt(limit);
+
+  // data
   const rows = db
     .prepare(
-      `SELECT * FROM posts WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`,
+      `SELECT * FROM posts
+       WHERE ${where}
+       ORDER BY ${order}
+       LIMIT ? OFFSET ?`,
     )
-    .all(...params, limitNum, (pageNum - 1) * limitNum);
+    .all(...params, limitNum, offset);
 
   return res.json({
     success: true,
@@ -107,6 +129,8 @@ function listPosts(req, res) {
       page: pageNum,
       limit: limitNum,
       totalPages: Math.ceil(total / limitNum),
+      hasNext: pageNum * limitNum < total,
+      hasPrev: pageNum > 1,
     },
   });
 }

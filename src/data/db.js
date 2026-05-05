@@ -23,6 +23,14 @@ db.exec(`
     revoked_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS contact (
+    id        INTEGER PRIMARY KEY DEFAULT 1,
+    email     TEXT DEFAULT '',
+    phones    TEXT DEFAULT '[]',
+    socials   TEXT DEFAULT '{}',
+    updatedAt TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS posts (
     id          TEXT PRIMARY KEY,
     section     TEXT NOT NULL,
@@ -74,6 +82,39 @@ try {
 try {
   db.exec("ALTER TABLE banners ADD COLUMN sortOrder INTEGER DEFAULT 0");
 } catch (e) {}
+
+// ── Migration: create contact table if not exists ─────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS contact (
+      id        INTEGER PRIMARY KEY DEFAULT 1,
+      email     TEXT DEFAULT '',
+      phones    TEXT DEFAULT '[]',
+      socials   TEXT DEFAULT '{}',
+      updatedAt TEXT
+    )
+  `);
+
+  // Insert default row if not exists
+  const exists = db.prepare("SELECT id FROM contact WHERE id = 1").get();
+  if (!exists) {
+    db.prepare(
+      `
+    INSERT INTO contact (id, email, phones, socials, updatedAt)
+    VALUES (1, '', '[]', '{}', datetime('now'))
+  `,
+    ).run();
+  }
+} catch (e) {
+  console.log("contact table migration skipped:", e.message);
+}
+
+// Migration: add socials column if table existed before this column was added
+try {
+  db.exec("ALTER TABLE contact ADD COLUMN socials TEXT DEFAULT '{}'");
+} catch (e) {
+  // column already exists — ignore
+}
 
 // ── Migration: set initial sortOrder (run once if needed) ─────
 try {
