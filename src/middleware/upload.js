@@ -40,4 +40,4 @@ function createUploader(folder) {
 const bannerUpload = createUploader("banners");
 const postImgUpload = createUploader("posts");
 
-module.exports = { bannerUpload, postImgUpload };
+module.exports = { bannerUpload, postImgUpload, createUploader };

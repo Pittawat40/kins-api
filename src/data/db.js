@@ -31,6 +31,15 @@ db.exec(`
     updatedAt TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS ads (
+    id        TEXT    PRIMARY KEY,
+    img       TEXT    NOT NULL DEFAULT '',
+    link      TEXT    NOT NULL DEFAULT '',
+    status    TEXT    NOT NULL DEFAULT 'active',
+    createdAt TEXT    NOT NULL,
+    updatedAt TEXT    NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS posts (
     id          TEXT PRIMARY KEY,
     section     TEXT NOT NULL,

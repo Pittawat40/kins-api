@@ -1,5 +1,12 @@
 // src/middleware/validateSection.js
-const SECTIONS = ["hotels", "realestate", "travel", "lifestyle", "dashboard"];
+const SECTIONS = [
+  "hotels",
+  "realestate",
+  "travel",
+  "lifestyle",
+  "dashboard",
+  "ads",
+];
 
 function validateSection(req, res, next) {
   const { section } = req.params;

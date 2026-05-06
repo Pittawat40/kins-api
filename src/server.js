@@ -10,6 +10,7 @@ const postsRoutes = require("./routes/posts");
 const bannersRoutes = require("./routes/banners");
 const combinedRoutes = require("./routes/combined");
 const dashboardRoutes = require("./routes/dashboard");
+const adsRoutes = require("./routes/ads");
 const contactRoutes = require("./routes/contact");
 
 const { searchOnePost } = require("./controllers/postsController");
@@ -64,7 +65,8 @@ app.get("/api/posts/search", searchOnePost);
 app.use("/api/auth", authRoutes);
 app.use("/api/posts/combined", combinedRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api", contactRoutes);  
+app.use("/api", contactRoutes);
+app.use("/api/ads", adsRoutes);
 app.use("/api/:section/posts", postsRoutes);
 app.use("/api/:section/banners", bannersRoutes);
 
