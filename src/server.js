@@ -23,6 +23,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:4000",
+  "https://kins-nuxt.vercel.app",
   process.env.FRONTEND_URL, // ← เพิ่ม
 ].filter(Boolean);
 
