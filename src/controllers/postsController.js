@@ -97,11 +97,10 @@ function listPosts(req, res) {
 
   const where = conds.join(" AND ");
 
-  // ✅ whitelist sort กัน injection + error
   const sortMap = {
-    newest: "createdAt DESC",
-    oldest: "createdAt ASC",
-    title: "title ASC",
+    newest: "sortOrder ASC, createdAt DESC",
+    oldest: "sortOrder ASC, createdAt ASC",
+    title: "sortOrder ASC, title ASC",
   };
 
   const order = sortMap[sort] || sortMap.newest;
@@ -334,6 +333,74 @@ function bulkStatus(req, res) {
   });
 }
 
+function reorderPosts(req, res) {
+  const { section } = req.params;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res
+      .status(400)
+      .json({ success: false, message: "ids array is required" });
+  }
+
+  const stmt = db.prepare(
+    "UPDATE posts SET sortOrder = ?, updatedAt = ? WHERE id = ? AND section = ?",
+  );
+  const now = new Date().toISOString();
+
+  db.transaction(() => {
+    ids.forEach((id, index) => {
+      stmt.run(index, now, id, section);
+    });
+  })();
+
+  return res.json({ success: true, message: "Reordered" });
+}
+
+function movePost(req, res) {
+  const { section, id } = req.params;
+  const { direction } = req.body;
+
+  if (!["up", "down"].includes(direction)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "direction must be 'up' or 'down'" });
+  }
+
+  const posts = db
+    .prepare(
+      "SELECT id, sortOrder FROM posts WHERE section = ? ORDER BY sortOrder ASC, createdAt DESC",
+    )
+    .all(section);
+
+  const currentIdx = posts.findIndex((p) => p.id === id);
+  if (currentIdx === -1) {
+    return res.status(404).json({ success: false, message: "Post not found" });
+  }
+
+  const swapIdx = direction === "up" ? currentIdx - 1 : currentIdx + 1;
+  if (swapIdx < 0 || swapIdx >= posts.length) {
+    return res.json({ success: true, message: "Already at boundary" });
+  }
+
+  // ✅ swap positions in array ก่อน
+  [posts[currentIdx], posts[swapIdx]] = [posts[swapIdx], posts[currentIdx]];
+
+  const now = new Date().toISOString();
+  const stmt = db.prepare(
+    "UPDATE posts SET sortOrder = ?, updatedAt = ? WHERE id = ?",
+  );
+
+  // ✅ เขียน sortOrder ใหม่จาก index — ป้องกัน duplicate/null
+  db.transaction(() => {
+    posts.forEach((p, index) => {
+      stmt.run(index, now, p.id);
+    });
+  })();
+
+  return res.json({ success: true, message: "Moved" });
+}
+
 module.exports = {
   listPosts,
   searchOnePost,
@@ -345,4 +412,6 @@ module.exports = {
   bulkDelete,
   bulkStatus,
   uploadImage,
+  reorderPosts,
+  movePost,
 };

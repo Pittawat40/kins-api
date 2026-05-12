@@ -92,6 +92,18 @@ try {
   db.exec("ALTER TABLE banners ADD COLUMN sortOrder INTEGER DEFAULT 0");
 } catch (e) {}
 
+// ── Migration: add sortOrder to content ───────────────────────
+try {
+  db.exec("ALTER TABLE posts ADD COLUMN sortOrder INTEGER DEFAULT 0");
+  db.exec(`
+    UPDATE posts SET sortOrder = (
+      SELECT COUNT(*) FROM posts p2
+      WHERE p2.section = posts.section
+        AND p2.createdAt < posts.createdAt
+    )
+  `);
+} catch (e) {}
+
 // ── Migration: create contact table if not exists ─────────────
 try {
   db.exec(`

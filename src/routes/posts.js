@@ -14,7 +14,12 @@ router.get("/slug/:slug", ctrl.getPostBySlug);
 router.get("/:id", ctrl.getPost);
 
 // Protected — standalone image upload (returns URL only, no post created)
-router.post("/upload-image", authenticate, postImgUpload.single("img"), ctrl.uploadImage);
+router.post(
+  "/upload-image",
+  authenticate,
+  postImgUpload.single("img"),
+  ctrl.uploadImage,
+);
 
 // Protected — create/update accept JSON body (img field = URL string)
 router.post("/", authenticate, ctrl.createPost);
@@ -22,5 +27,11 @@ router.put("/:id", authenticate, ctrl.updatePost);
 router.delete("/bulk", authenticate, ctrl.bulkDelete);
 router.patch("/bulk-status", authenticate, ctrl.bulkStatus);
 router.delete("/:id", authenticate, ctrl.deletePost);
+
+// reorder: ส่ง ids array ทั้งหมดในลำดับใหม่
+router.patch("/reorder", authenticate, ctrl.reorderPosts);
+
+// move: เลื่อนขึ้น/ลง 1 ตำแหน่ง
+router.patch("/:id/move", authenticate, ctrl.movePost);
 
 module.exports = router;
