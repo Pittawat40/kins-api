@@ -29,6 +29,62 @@ function resolveImg(req) {
   return req.body.img !== undefined ? req.body.img : undefined;
 }
 
+function getOverview(req, res) {
+  try {
+    // 1. ล็อก Timezone ให้เป็นประเทศไทย และบังคับฟอร์แมต YYYY-MM-DD ด้วย en-CA
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Bangkok",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    // จะได้ผลลัพธ์เป็น "2026-05-14" เสมอ (ตามเวลาไทย ณ ขณะนั้น)
+    const monthPrefix = today.slice(0, 7);
+
+    const todayRow = db
+      .prepare(
+        `
+      SELECT COALESCE(views, 0) AS views
+      FROM page_views
+      WHERE date = ?
+    `,
+      )
+      .get(today);
+
+    const monthRow = db
+      .prepare(
+        `
+      SELECT COALESCE(SUM(views), 0) AS views
+      FROM page_views
+      WHERE date LIKE ?
+    `,
+      )
+      .get(`${monthPrefix}%`);
+
+    const totalRow = db
+      .prepare(
+        `
+      SELECT COALESCE(SUM(views), 0) AS views
+      FROM page_views
+    `,
+      )
+      .get();
+
+    return res.json({
+      success: true,
+      data: {
+        today: todayRow?.views ?? 0,
+        month: monthRow?.views ?? 0,
+        total: totalRow?.views ?? 0,
+      },
+    });
+  } catch (err) {
+    console.error("dashboard overview error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 // GET /api/dashboard/items
 function listItems(req, res) {
   const { status, sort = "order" } = req.query;
@@ -221,11 +277,44 @@ function reorderItems(req, res) {
   }
 }
 
+function trackPageView(req, res) {
+  try {
+    // ดึงวันที่ปัจจุบันตาม Timezone ของไทย
+    const today = new Intl.DateTimeFormat("fr-CA", {
+      timeZone: "Asia/Bangkok",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date()); // ผลลัพธ์ที่ได้จะเป็น 'YYYY-MM-DD' ทันที
+
+    db.prepare(
+      `
+      INSERT INTO page_views (date, views)
+      VALUES (?, 1)
+      ON CONFLICT(date) DO UPDATE SET views = views + 1
+    `,
+    ).run(today);
+
+    return res.json({
+      success: true,
+      message: "Track success",
+    });
+  } catch (err) {
+    console.error("Database track pageview error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Track failed",
+    });
+  }
+}
+
 module.exports = {
+  getOverview,
   listItems,
   getItem,
   createItem,
   updateItem,
   deleteItem,
   reorderItems,
+  trackPageView,
 };

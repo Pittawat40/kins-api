@@ -8,6 +8,8 @@ const { postImgUpload } = require("../middleware/upload");
 // Public
 router.get("/items", ctrl.listItems);
 router.get("/items/:id", ctrl.getItem);
+router.get("/overview", ctrl.getOverview);
+router.post("/pageview", ctrl.trackPageView);
 
 // Protected
 router.post(

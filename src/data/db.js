@@ -23,12 +23,28 @@ db.exec(`
     revoked_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS page_views (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    date    TEXT    NOT NULL,  -- 'YYYY-MM-DD'
+    views   INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(date)
+  );
+
   CREATE TABLE IF NOT EXISTS contact (
     id        INTEGER PRIMARY KEY DEFAULT 1,
     email     TEXT DEFAULT '',
     phones    TEXT DEFAULT '[]',
     socials   TEXT DEFAULT '{}',
     updatedAt TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS ad_clicks (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    ad_id   TEXT    NOT NULL,
+    date    TEXT    NOT NULL,           -- 'YYYY-MM-DD'
+    clicks  INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(ad_id, date),
+    FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS ads (

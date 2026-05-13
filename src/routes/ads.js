@@ -9,6 +9,7 @@ const adImgUpload = createUploader("ads");
 
 // Public
 router.get("/", ctrl.listAds);
+router.post("/:id/click", ctrl.trackAds);
 
 // Protected
 router.post("/", authenticate, adImgUpload.single("img"), ctrl.createAd);

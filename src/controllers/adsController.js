@@ -22,18 +22,59 @@ function listAds(req, res) {
   const { status } = req.query;
   const conds = ["1=1"];
   const params = [];
+
   if (status) {
-    conds.push("status = ?");
+    conds.push("a.status = ?"); // เปลี่ยน alias เป็น a.
     params.push(status);
   }
 
   const rows = db
     .prepare(
-      `SELECT * FROM ads WHERE ${conds.join(" AND ")} ORDER BY createdAt DESC`,
+      `
+      SELECT
+        a.*,
+        COALESCE(SUM(c.clicks), 0) AS total_clicks
+      FROM ads a
+      LEFT JOIN ad_clicks c ON c.ad_id = a.id
+      WHERE ${conds.join(" AND ")}
+      GROUP BY a.id
+      ORDER BY a.createdAt DESC
+    `,
     )
     .all(...params);
 
   return res.json({ success: true, data: rows, meta: { total: rows.length } });
+}
+
+function trackAds(req, res) {
+  try {
+    const { id } = req.params;
+    const today = new Date().toISOString().slice(0, 10);
+
+    // ตรวจว่า ad นี้มีอยู่จริง
+    const ad = db.prepare(`SELECT * FROM ads WHERE id = ?`).get(id);
+    if (!ad)
+      return res.status(404).json({ success: false, message: "Ad not found" });
+
+    // บันทึก click
+    db.prepare(
+      `
+        INSERT INTO ad_clicks (ad_id, date, clicks)
+        VALUES (?, ?, 1)
+        ON CONFLICT(ad_id, date) DO UPDATE SET clicks = clicks + 1
+      `,
+    ).run(id, today);
+
+    return res.json({
+      success: true,
+      message: "track ads success",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "track ads failed",
+    });
+  }
 }
 
 // POST /api/ads  — multipart: field "img" (file) + body: link, status
@@ -150,4 +191,4 @@ function deleteAd(req, res) {
   return res.json({ success: true, message: "Ad deleted" });
 }
 
-module.exports = { listAds, createAd, updateAd, deleteAd };
+module.exports = { listAds, createAd, updateAd, deleteAd, trackAds };
