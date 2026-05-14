@@ -33,5 +33,6 @@ router.patch("/reorder", authenticate, ctrl.reorderPosts);
 
 // move: เลื่อนขึ้น/ลง 1 ตำแหน่ง
 router.patch("/:id/move", authenticate, ctrl.movePost);
+router.post("/:id/view", ctrl.trackPostView);
 
 module.exports = router;

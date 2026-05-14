@@ -38,6 +38,15 @@ db.exec(`
     updatedAt TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS post_views (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id TEXT    NOT NULL,
+    section TEXT    NOT NULL,           -- 'hotels' | 'realestate' | 'travel' | 'lifestyle'
+    date    TEXT    NOT NULL,           -- 'YYYY-MM-DD'
+    views   INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(post_id, date)
+  );
+
   CREATE TABLE IF NOT EXISTS ad_clicks (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
     ad_id   TEXT    NOT NULL,

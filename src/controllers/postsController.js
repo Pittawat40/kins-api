@@ -67,6 +67,32 @@ function searchOnePost(req, res) {
   return res.json({ success: true, data: fmt(row) });
 }
 
+function trackPostView(req, res) {
+  try {
+    const { section, id } = req.params;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const post = db.prepare(`SELECT id FROM posts WHERE id = ?`).get(id);
+    if (!post)
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+
+    db.prepare(
+      `
+      INSERT INTO post_views (post_id, section, date, views)
+      VALUES (?, ?, ?, 1)
+      ON CONFLICT(post_id, date) DO UPDATE SET views = views + 1
+    `,
+    ).run(id, section, today);
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("track post view error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 // GET /api/:section/posts
 function listPosts(req, res) {
   const { section } = req.params;
@@ -82,39 +108,42 @@ function listPosts(req, res) {
   const limitNum = Math.max(parseInt(limit) || 10, 1);
   const offset = (pageNum - 1) * limitNum;
 
-  const conds = ["section = ?"];
+  const conds = ["p.section = ?"]; // ← เพิ่ม alias p.
   const params = [section];
 
   if (status) {
-    conds.push("status = ?");
+    conds.push("p.status = ?"); // ← เพิ่ม alias p.
     params.push(status);
   }
 
   if (search) {
-    conds.push("title LIKE ?");
+    conds.push("p.title LIKE ?"); // ← เพิ่ม alias p.
     params.push(`%${search}%`);
   }
 
   const where = conds.join(" AND ");
 
   const sortMap = {
-    newest: "sortOrder ASC, createdAt DESC",
-    oldest: "sortOrder ASC, createdAt ASC",
-    title: "sortOrder ASC, title ASC",
+    newest: "p.sortOrder ASC, p.createdAt DESC",
+    oldest: "p.sortOrder ASC, p.createdAt ASC",
+    title: "p.sortOrder ASC, p.title ASC",
   };
 
   const order = sortMap[sort] || sortMap.newest;
 
-  // total
+  // total (ไม่ต้อง JOIN เพราะนับแค่ posts)
   const total = db
-    .prepare(`SELECT COUNT(*) as c FROM posts WHERE ${where}`)
+    .prepare(`SELECT COUNT(*) as c FROM posts p WHERE ${where}`)
     .get(...params).c;
 
-  // data
+  // data + total_views ← JOIN post_views
   const rows = db
     .prepare(
-      `SELECT * FROM posts
+      `SELECT p.*, COALESCE(SUM(v.views), 0) AS total_views
+       FROM posts p
+       LEFT JOIN post_views v ON v.post_id = p.id
        WHERE ${where}
+       GROUP BY p.id
        ORDER BY ${order}
        LIMIT ? OFFSET ?`,
     )
@@ -414,4 +443,5 @@ module.exports = {
   uploadImage,
   reorderPosts,
   movePost,
+  trackPostView,
 };

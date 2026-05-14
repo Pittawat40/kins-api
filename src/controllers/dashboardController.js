@@ -31,7 +31,6 @@ function resolveImg(req) {
 
 function getOverview(req, res) {
   try {
-    // 1. ล็อก Timezone ให้เป็นประเทศไทย และบังคับฟอร์แมต YYYY-MM-DD ด้วย en-CA
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Bangkok",
       year: "numeric",
@@ -39,15 +38,14 @@ function getOverview(req, res) {
       day: "2-digit",
     }).format(new Date());
 
-    // จะได้ผลลัพธ์เป็น "2026-05-14" เสมอ (ตามเวลาไทย ณ ขณะนั้น)
     const monthPrefix = today.slice(0, 7);
+    const yearPrefix = today.slice(0, 4); // ← เพิ่ม
 
     const todayRow = db
       .prepare(
         `
       SELECT COALESCE(views, 0) AS views
-      FROM page_views
-      WHERE date = ?
+      FROM page_views WHERE date = ?
     `,
       )
       .get(today);
@@ -56,8 +54,7 @@ function getOverview(req, res) {
       .prepare(
         `
       SELECT COALESCE(SUM(views), 0) AS views
-      FROM page_views
-      WHERE date LIKE ?
+      FROM page_views WHERE date LIKE ?
     `,
       )
       .get(`${monthPrefix}%`);
@@ -71,12 +68,28 @@ function getOverview(req, res) {
       )
       .get();
 
+    // ← เพิ่ม: รายเดือนของปีนี้
+    const monthlyRows = db
+      .prepare(
+        `
+      SELECT
+        strftime('%m', date) AS month,
+        SUM(views)           AS views
+      FROM page_views
+      WHERE date LIKE ?
+      GROUP BY strftime('%m', date)
+      ORDER BY month ASC
+    `,
+      )
+      .all(`${yearPrefix}%`);
+
     return res.json({
       success: true,
       data: {
         today: todayRow?.views ?? 0,
         month: monthRow?.views ?? 0,
         total: totalRow?.views ?? 0,
+        monthly: monthlyRows, // ← เพิ่ม
       },
     });
   } catch (err) {
