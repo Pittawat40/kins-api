@@ -139,7 +139,7 @@ function listPosts(req, res) {
   // data + total_views ← JOIN post_views
   const rows = db
     .prepare(
-      `SELECT p.*, COALESCE(SUM(v.views), 0) AS total_views
+      `SELECT p.*, COALESCE(SUM(v.views), 0) AS totalViews
        FROM posts p
        LEFT JOIN post_views v ON v.post_id = p.id
        WHERE ${where}
@@ -208,6 +208,7 @@ function createPost(req, res) {
     metaTitle,
     metaDesc,
     img,
+    bannerImg,
   } = req.body;
 
   if (!title)
@@ -220,8 +221,8 @@ function createPost(req, res) {
 
   db.prepare(
     `
-    INSERT INTO posts (id, section, title, description, content, img, category, tags, status, date, metaTitle, metaDesc, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO posts (id, section, title, description, content, img, bannerImg, category, tags, status, date, metaTitle, metaDesc, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     id,
@@ -230,6 +231,7 @@ function createPost(req, res) {
     description || "",
     content || "",
     img || null,
+    bannerImg || null,
     category || "",
     JSON.stringify(parseTags(tags)),
     status || "draft",
@@ -284,6 +286,13 @@ function updatePost(req, res) {
     const newImg = req.body.img || null;
     if (newImg !== exists.img) deleteLocalImg(exists.img);
     sets.push("img = ?");
+    vals.push(newImg);
+  }
+  
+  if (req.body.bannerImg !== undefined) {
+    const newImg = req.body.bannerImg || null;
+    if (newImg !== exists.bannerImg) deleteLocalImg(exists.bannerImg);
+    sets.push("bannerImg = ?");
     vals.push(newImg);
   }
 

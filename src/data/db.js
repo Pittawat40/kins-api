@@ -72,6 +72,7 @@ db.exec(`
     description TEXT    DEFAULT '',
     content     TEXT    DEFAULT '',
     img         TEXT,
+    bannerImg   TEXT    DEFAULT '',
     category    TEXT    DEFAULT '',
     tags        TEXT    DEFAULT '[]',
     status      TEXT    DEFAULT 'draft',
@@ -101,6 +102,11 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_banners_section ON banners(section);
 `);
+
+// ── Migration: add bannerImg to posts ───────────────────────
+try {
+  db.exec("ALTER TABLE posts ADD COLUMN bannerImg TEXT DEFAULT ''");
+} catch (e) {}
 
 // ── Migration: add type if not exists ──────────
 try {
