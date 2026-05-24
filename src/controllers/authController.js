@@ -34,13 +34,12 @@ async function login(req, res) {
       role: user.role,
     };
 
-    const EXPIRES_IN = "10s"; // ← ตรงกัน
+    const EXPIRES_IN = "1d";
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: EXPIRES_IN,
     });
 
-    const expiresAt = Date.now() + 10 * 1000;
-    // const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
 
     return res.json({
       success: true,
