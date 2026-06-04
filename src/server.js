@@ -13,7 +13,10 @@ const dashboardRoutes = require("./routes/dashboard");
 const adsRoutes = require("./routes/ads");
 const contactRoutes = require("./routes/contact");
 
-const { searchOnePost } = require("./controllers/postsController");
+const {
+  searchOnePost,
+  suggestPosts,
+} = require("./controllers/postsController");
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -60,6 +63,7 @@ app.get("/api/health", (_req, res) => {
 
 // ──Search ──────────────────────────────────────────────
 app.get("/api/posts/search", searchOnePost);
+app.get("/api/posts/suggest", suggestPosts);
 
 // ── Routes ─────────────────────────────────────────────────────
 // combined must be registered BEFORE :section wildcard routes

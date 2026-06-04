@@ -288,7 +288,7 @@ function updatePost(req, res) {
     sets.push("img = ?");
     vals.push(newImg);
   }
-  
+
   if (req.body.bannerImg !== undefined) {
     const newImg = req.body.bannerImg || null;
     if (newImg !== exists.bannerImg) deleteLocalImg(exists.bannerImg);
@@ -439,6 +439,23 @@ function movePost(req, res) {
   return res.json({ success: true, message: "Moved" });
 }
 
+// GET /api/posts/suggest?q=keyword
+function suggestPosts(req, res) {
+  const keyword = (req.query.q || "").trim();
+  if (!keyword || keyword.length < 1)
+    return res.json({ success: true, data: [] });
+
+  const rows = db
+    .prepare(
+      `SELECT id, title, category, section FROM posts
+       WHERE title LIKE ? COLLATE NOCASE AND status = 'published'
+       ORDER BY createdAt DESC LIMIT 6`,
+    )
+    .all(`%${keyword}%`);
+
+  return res.json({ success: true, data: rows });
+}
+
 module.exports = {
   listPosts,
   searchOnePost,
@@ -453,4 +470,5 @@ module.exports = {
   reorderPosts,
   movePost,
   trackPostView,
+  suggestPosts,
 };
