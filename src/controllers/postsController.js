@@ -163,24 +163,27 @@ function listPosts(req, res) {
   });
 }
 
+function toSlug(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\u0E00-\u0E7Fa-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
 // GET /api/:section/posts/slug/:slug
 function getPostBySlug(req, res) {
-  const { slug } = req.params;
+  const slug = decodeURIComponent(req.params.slug);
 
   const rows = db.prepare("SELECT * FROM posts").all();
   const row = rows.find((p) => toSlug(p.title) === slug);
 
   if (!row) {
-    return res.status(404).json({
-      success: false,
-      message: "Post not found",
-    });
+    return res.status(404).json({ success: false, message: "Post not found" });
   }
 
-  return res.json({
-    success: true,
-    data: fmt(row),
-  });
+  return res.json({ success: true, data: fmt(row) });
 }
 
 // GET /api/:section/posts/:id
