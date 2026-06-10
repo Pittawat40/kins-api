@@ -4,7 +4,7 @@ const router = express.Router({ mergeParams: true });
 const ctrl = require("../controllers/postsController");
 const { authenticate } = require("../middleware/auth");
 const { validateSection } = require("../middleware/validateSection");
-const { postImgUpload } = require("../middleware/upload");
+const { postImgUpload, processImage } = require("../middleware/upload");
 
 router.use(validateSection);
 
@@ -18,6 +18,7 @@ router.post(
   "/upload-image",
   authenticate,
   postImgUpload.single("img"),
+  processImage,
   ctrl.uploadImage,
 );
 
