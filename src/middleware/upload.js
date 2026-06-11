@@ -57,7 +57,43 @@ async function processImage(req, res, next) {
   next();
 }
 
+async function processImageByPath(imgUrl) {
+  if (!imgUrl || !imgUrl.startsWith("/uploads/")) return;
+
+  const filePath = path.join(process.cwd(), imgUrl);
+  if (!fs.existsSync(filePath)) return;
+
+  const tmpPath = filePath + ".tmp.jpg";
+
+  try {
+    await sharp(filePath)
+      .resize(1200, 800, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toFile(tmpPath);
+
+    const tmpExists = fs.existsSync(tmpPath) && fs.statSync(tmpPath).size > 0;
+    if (tmpExists) {
+      fs.unlinkSync(filePath);
+      fs.renameSync(tmpPath, filePath);
+    } else {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+      console.warn(
+        "processImageByPath: tmp file missing or empty, skip replace",
+      );
+    }
+  } catch (err) {
+    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    console.error("processImageByPath failed:", err);
+  }
+}
+
 const bannerUpload = createUploader("banners");
 const postImgUpload = createUploader("posts");
 
-module.exports = { bannerUpload, postImgUpload, createUploader, processImage };
+module.exports = {
+  bannerUpload,
+  postImgUpload,
+  createUploader,
+  processImage,
+  processImageByPath,
+};

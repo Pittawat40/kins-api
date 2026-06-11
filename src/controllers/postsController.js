@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
 const db = require("../data/db");
+const { processImageByPath } = require("../middleware/upload");
 
 function parseTags(raw) {
   if (Array.isArray(raw)) return raw;
@@ -253,7 +254,7 @@ function createPost(req, res) {
 }
 
 // PUT /api/:section/posts/:id — JSON body, img = URL string
-function updatePost(req, res) {
+async function updatePost(req, res) {
   const { section, id } = req.params;
   const exists = db
     .prepare("SELECT * FROM posts WHERE section = ? AND id = ?")
@@ -287,7 +288,12 @@ function updatePost(req, res) {
   // img: only update if explicitly sent; delete old local file if replaced
   if (req.body.img !== undefined) {
     const newImg = req.body.img || null;
-    if (newImg !== exists.img) deleteLocalImg(exists.img);
+    if (newImg !== exists.img) {
+      deleteLocalImg(exists.img);
+    }
+    if (newImg) {
+      await processImageByPath(newImg);
+    }
     sets.push("img = ?");
     vals.push(newImg);
   }
