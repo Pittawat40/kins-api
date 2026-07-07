@@ -465,6 +465,48 @@ function suggestPosts(req, res) {
   return res.json({ success: true, data: rows });
 }
 
+// PATCH /api/:section/posts/:id/move-section
+function changeSection(req, res) {
+  const { section, id } = req.params;
+  const { newSection } = req.body;
+  const validSections = ["hotels", "realestate", "travel", "lifestyle"];
+
+  if (!newSection || !validSections.includes(newSection)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "newSection ไม่ถูกต้อง" });
+  }
+  if (newSection === section) {
+    return res
+      .status(400)
+      .json({ success: false, message: "หมวดหมู่เดิมและใหม่เหมือนกัน" });
+  }
+
+  const exists = db
+    .prepare("SELECT * FROM posts WHERE section = ? AND id = ?")
+    .get(section, id);
+  if (!exists)
+    return res.status(404).json({ success: false, message: "Post not found" });
+
+  const now = new Date().toISOString();
+
+  db.transaction(() => {
+    db.prepare(
+      "UPDATE posts SET sortOrder = sortOrder + 1 WHERE section = ?",
+    ).run(newSection);
+
+    db.prepare(
+      "UPDATE posts SET section = ?, sortOrder = 0, updatedAt = ? WHERE id = ?",
+    ).run(newSection, now, id);
+  })();
+
+  return res.json({
+    success: true,
+    message: "ย้ายหมวดหมู่แล้ว",
+    data: fmt(db.prepare("SELECT * FROM posts WHERE id = ?").get(id)),
+  });
+}
+
 module.exports = {
   listPosts,
   searchOnePost,
@@ -480,4 +522,5 @@ module.exports = {
   movePost,
   trackPostView,
   suggestPosts,
+  changeSection,
 };

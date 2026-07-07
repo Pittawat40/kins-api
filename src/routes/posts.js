@@ -29,11 +29,13 @@ router.delete("/bulk", authenticate, ctrl.bulkDelete);
 router.patch("/bulk-status", authenticate, ctrl.bulkStatus);
 router.delete("/:id", authenticate, ctrl.deletePost);
 
+
 // reorder: ส่ง ids array ทั้งหมดในลำดับใหม่
 router.patch("/reorder", authenticate, ctrl.reorderPosts);
 
 // move: เลื่อนขึ้น/ลง 1 ตำแหน่ง
 router.patch("/:id/move", authenticate, ctrl.movePost);
+router.patch("/:id/move-section", authenticate, ctrl.changeSection);
 router.post("/:id/view", ctrl.trackPostView);
 
 module.exports = router;
